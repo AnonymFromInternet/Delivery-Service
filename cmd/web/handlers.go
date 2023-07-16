@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 )
 
 func (application *Config) handlerGetMainPage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("handlerGetMainPage()")
 	application.renderTemplate(w, r, "home.page.gohtml", nil)
 }
 

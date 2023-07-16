@@ -41,7 +41,7 @@ func main() {
 
 	// set up mail
 
-	app.listenForShutdown()
+	go app.listenForShutdown()
 
 	app.serve()
 
