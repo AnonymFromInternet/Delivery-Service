@@ -63,7 +63,12 @@ func (application *Config) handlerPostLoginPage(w http.ResponseWriter, r *http.R
 
 }
 
-func (application *Config) handlerGetLogoutPage(w http.ResponseWriter, r *http.Request) {}
+func (application *Config) handlerGetLogoutPage(w http.ResponseWriter, r *http.Request) {
+	_ = application.Session.Destroy(r.Context())
+	_ = application.Session.RenewToken(r.Context())
+
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
+}
 
 func (application *Config) handlerGetRegisterPage(w http.ResponseWriter, r *http.Request) {
 	application.renderTemplate(w, r, "register.page.gohtml", nil)
