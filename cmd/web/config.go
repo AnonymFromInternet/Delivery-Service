@@ -3,10 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/AnonymFromInternet/Delivery-Service/data"
 	"github.com/alexedwards/scs/v2"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 )
 
 var webPort = ":80"
@@ -17,6 +21,7 @@ type Config struct {
 	InfoLog  *log.Logger
 	ErrorLog *log.Logger
 	Wait     *sync.WaitGroup
+	Models   data.Models
 }
 
 func (application *Config) serve() {
@@ -34,4 +39,21 @@ func (application *Config) serve() {
 	}
 
 	application.InfoLog.Println("starting the server")
+}
+
+func (application *Config) listenForShutdown() {
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	application.shutdown()
+	os.Exit(0)
+}
+
+func (application *Config) shutdown() {
+	application.InfoLog.Println("would run cleanup tasks")
+
+	application.Wait.Wait()
+
+	application.InfoLog.Println("closing channels and shutting down application...")
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"database/sql"
+	"encoding/gob"
+	"github.com/AnonymFromInternet/Delivery-Service/data"
 	"github.com/alexedwards/scs/redisstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/gomodule/redigo/redis"
@@ -17,33 +19,30 @@ import (
 )
 
 func main() {
-	// connect to the database
 	db := initDataBase()
 
-	// create sessions
 	session := initSession()
 
-	// create loggers
 	infoLog := log.New(os.Stdout, "INFO \t:", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR \t:", log.Ldate|log.Ltime|log.Lshortfile)
 
 	// create channels
 
-	// crate wg
 	wg := &sync.WaitGroup{}
 
-	// create and populate app config
 	app := Config{
 		Session:  session,
 		DB:       db,
 		InfoLog:  infoLog,
 		ErrorLog: errorLog,
 		Wait:     wg,
+		Models:   data.New(db),
 	}
 
 	// set up mail
 
-	// starting the server
+	app.listenForShutdown()
+
 	app.serve()
 
 }
@@ -97,6 +96,8 @@ func openDataBase(dsn string) (*sql.DB, error) {
 }
 
 func initSession() *scs.SessionManager {
+	gob.Register(data.User{})
+
 	session := scs.New()
 	session.Store = redisstore.New(initRedis())
 	session.Lifetime = 24 * time.Hour
