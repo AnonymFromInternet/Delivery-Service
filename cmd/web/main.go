@@ -2,8 +2,13 @@ package main
 
 import (
 	"database/sql"
+	"github.com/alexedwards/scs/redisstore"
+	"github.com/alexedwards/scs/v2"
+	"github.com/gomodule/redigo/redis"
 	"log"
+	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	_ "github.com/jackc/pgconn"
@@ -14,22 +19,33 @@ import (
 func main() {
 	// connect to the database
 	db := initDataBase()
-	err := db.Ping()
-	if err != nil {
-		return
-	}
 
 	// create sessions
+	session := initSession()
+
+	// create loggers
+	infoLog := log.New(os.Stdout, "INFO \t:", log.Ldate|log.Ltime)
+	errorLog := log.New(os.Stdout, "ERROR \t:", log.Ldate|log.Ltime|log.Lshortfile)
 
 	// create channels
 
 	// crate wg
+	wg := &sync.WaitGroup{}
 
 	// create and populate app config
+	app := Config{
+		Session:  session,
+		DB:       db,
+		InfoLog:  infoLog,
+		ErrorLog: errorLog,
+		Wait:     wg,
+	}
 
 	// set up mail
 
-	// listen for web connections
+	// starting the server
+	app.serve()
+
 }
 
 func initDataBase() *sql.DB {
@@ -78,4 +94,24 @@ func openDataBase(dsn string) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func initSession() *scs.SessionManager {
+	session := scs.New()
+	session.Store = redisstore.New(initRedis())
+	session.Lifetime = 24 * time.Hour
+	session.Cookie.Persist = true
+	session.Cookie.SameSite = http.SameSiteLaxMode
+	session.Cookie.Secure = true
+
+	return session
+}
+
+func initRedis() *redis.Pool {
+	return &redis.Pool{
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", os.Getenv("REDIS"))
+		},
+		MaxIdle: 10,
+	}
 }
