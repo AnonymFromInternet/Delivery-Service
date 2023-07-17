@@ -21,5 +21,27 @@ func (application *Config) routes() http.Handler {
 	mux.Post("/login", application.handlerPostLoginPage)
 	mux.Post("/register", application.handlerPostRegisterPage)
 
+	mux.Get("/test-email", func(writer http.ResponseWriter, request *http.Request) {
+		m := MailServer{
+			Domain:      "localhost",
+			Host:        "localhost",
+			Port:        1025,
+			Username:    "",
+			Password:    "",
+			Encryption:  "none",
+			FromAddress: "company@mail.com",
+			FromName:    "info",
+			ErrorChan:   make(chan error),
+		}
+
+		msg := Message{
+			To:      "client@mail.com",
+			Subject: "test-email",
+			Data:    "test-data",
+		}
+
+		m.sendMail(msg, make(chan error))
+	})
+
 	return mux
 }
